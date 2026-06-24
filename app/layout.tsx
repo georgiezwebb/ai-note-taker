@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics } from "@vercel/analytics/next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { ConditionalAuthHeader } from "@/components/conditional-auth-header";
@@ -40,6 +41,7 @@ export default function RootLayout({
           <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
             {children}
           </main>
+          <Analytics />
         </ClerkProvider>
       </body>
     </html>
