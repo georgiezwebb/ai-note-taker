@@ -1,7 +1,15 @@
 import { execSync } from "node:child_process";
 
-const FAILED_MIGRATION = "20250406180000_user_openai_keys";
-const REPAIR_SQL = "prisma/repair-failed-openai-keys-migration.sql";
+const REPAIRS = [
+  {
+    migration: "20250406180000_user_openai_keys",
+    sql: "prisma/repair-failed-openai-keys-migration.sql",
+  },
+  {
+    migration: "20250406190000_collections",
+    sql: "prisma/repair-failed-collections-migration.sql",
+  },
+];
 
 function run(command) {
   execSync(command, { stdio: "inherit" });
@@ -14,25 +22,43 @@ function runCapture(command) {
   });
 }
 
-function tryMigrateDeploy() {
-  try {
-    runCapture("npx prisma migrate deploy");
-    return;
-  } catch (error) {
-    const output = `${error.stdout ?? ""}${error.stderr ?? ""}${error.message ?? ""}`;
-    const isFailedOpenAiKeysMigration =
-      output.includes("P3009") && output.includes(FAILED_MIGRATION);
+function getMigrationErrorOutput(error) {
+  return `${error.stdout ?? ""}${error.stderr ?? ""}${error.message ?? ""}`;
+}
 
-    if (!isFailedOpenAiKeysMigration) {
-      process.stderr.write(output);
-      process.exit(error.status ?? 1);
+function findRepair(output) {
+  const isMigrationFailure =
+    output.includes("P3009") || output.includes("P3018");
+  if (!isMigrationFailure) {
+    return null;
+  }
+
+  return REPAIRS.find(({ migration }) => output.includes(migration)) ?? null;
+}
+
+function tryMigrateDeploy() {
+  const maxAttempts = REPAIRS.length + 1;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      runCapture("npx prisma migrate deploy");
+      return;
+    } catch (error) {
+      const output = getMigrationErrorOutput(error);
+      const repair = findRepair(output);
+
+      if (!repair) {
+        process.stderr.write(output);
+        process.exit(error.status ?? 1);
+      }
+
+      console.log(`Repairing failed migration ${repair.migration}...`);
+      run(`npx prisma db execute --file ${repair.sql}`);
+      run(`npx prisma migrate resolve --applied ${repair.migration}`);
     }
   }
 
-  console.log(`Repairing failed migration ${FAILED_MIGRATION}...`);
-  run(`npx prisma db execute --file ${REPAIR_SQL}`);
-  run(`npx prisma migrate resolve --applied ${FAILED_MIGRATION}`);
-  run("npx prisma migrate deploy");
+  throw new Error("Unable to apply migrations after running all repair steps.");
 }
 
 tryMigrateDeploy();
