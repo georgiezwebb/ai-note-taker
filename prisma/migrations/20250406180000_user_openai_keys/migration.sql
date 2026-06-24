@@ -18,7 +18,7 @@ SELECT
     "id",
     'Key 1',
     "openaiKeyCiphertext",
-    "openaiKeyLastFour",
+    COALESCE(NULLIF("openaiKeyLastFour", ''), RIGHT("openaiKeyCiphertext", 4), '????'),
     COALESCE("openaiKeyUpdatedAt", CURRENT_TIMESTAMP),
     COALESCE("openaiKeyUpdatedAt", CURRENT_TIMESTAMP)
 FROM "User"
