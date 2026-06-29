@@ -62,11 +62,10 @@ export function LandingHero({ className }: { className?: string }) {
             Portfolio project · AI Bootcamp
           </p>
           <h1 className="mt-4 font-heading text-[2.35rem] font-medium leading-[1.08] tracking-tight text-foreground sm:text-5xl sm:leading-[1.06]">
-            A note app for people who write things down and forget where they put them.
+            A notes app with AI features.
           </h1>
           <p className="mt-6 text-base leading-relaxed text-muted-foreground sm:text-lg">
-            I built this because my ideas lived in too many tabs. It&apos;s a
-            real full-stack app: user authentication, database, collections, calendar filters,
+            A full-stack notes app with user authentication, database, collections, calendar filters,
             and optional AI features.
           </p>
           <div
